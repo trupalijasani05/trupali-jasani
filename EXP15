@@ -1,0 +1,101 @@
+import sqlite3
+
+# Connect to database (or create it)
+conn = sqlite3.connect('student_record.db')
+cursor = conn.cursor()
+
+# 🔁 Drop old table to prevent structure error
+cursor.execute("DROP TABLE IF EXISTS student_record")
+
+# ✅ Create table with 5 subjects and their marks
+cursor.execute('''
+    CREATE TABLE student_record (
+        Enrollment INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        Subject1 TEXT NOT NULL, Mark1 INTEGER NOT NULL,
+        Subject2 TEXT NOT NULL, Mark2 INTEGER NOT NULL,
+        Subject3 TEXT NOT NULL, Mark3 INTEGER NOT NULL,
+        Subject4 TEXT NOT NULL, Mark4 INTEGER NOT NULL,
+        Subject5 TEXT NOT NULL, Mark5 INTEGER NOT NULL
+    )
+''')
+
+conn.commit()
+
+# ✅ 5 subjects and marks for each student
+student_record = [
+    (92301733016, 'ASHUTOSH KUMAR SINGH', 'PWP', 95, 'DBMS', 90, 'OS', 92, 'CN', 88, 'DS', 91),
+    (92301733017, 'HARSH VISHALBHAI TRIVEDI', 'PWP', 85, 'DBMS', 82, 'OS', 78, 'CN', 80, 'DS', 84),
+    (92301733027, 'VIRAJ PRAKASHBHAI VAGHASIYA', 'PWP', 90, 'DBMS', 88, 'OS', 86, 'CN', 87, 'DS', 89),
+    (92301733046, 'SHIVAM ATULKUMAR BHATT', 'PWP', 93, 'DBMS', 94, 'OS', 92, 'CN', 91, 'DS', 90),
+    (92301733058, 'DEVENDRASINH DOLATSINH JADEJA', 'PWP', 75, 'DBMS', 72, 'OS', 70, 'CN', 68, 'DS', 74)
+]
+
+# ✅ Insert all records
+cursor.executemany('''
+    INSERT INTO student_record (
+        Enrollment, name,
+        Subject1, Mark1,
+        Subject2, Mark2,
+        Subject3, Mark3,
+        Subject4, Mark4,
+        Subject5, Mark5
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+''', student_record)
+
+conn.commit()
+
+# ✅ Display all student records
+cursor.execute('SELECT * FROM student_record')
+rows = cursor.fetchall()
+print("All Student Records:")
+for row in rows:
+    print(row)
+
+# ✅ Show marks greater than 90 in any subject
+print("\nSubjects with Marks > 90:")
+cursor.execute('''
+    SELECT name,
+        CASE WHEN Mark1 > 90 THEN Subject1 || ': ' || Mark1 ELSE NULL END,
+        CASE WHEN Mark2 > 90 THEN Subject2 || ': ' || Mark2 ELSE NULL END,
+        CASE WHEN Mark3 > 90 THEN Subject3 || ': ' || Mark3 ELSE NULL END,
+        CASE WHEN Mark4 > 90 THEN Subject4 || ': ' || Mark4 ELSE NULL END,
+        CASE WHEN Mark5 > 90 THEN Subject5 || ': ' || Mark5 ELSE NULL END
+    FROM student_record
+''')
+high_marks = cursor.fetchall()
+for row in high_marks:
+    name = row[0]
+    subjects = [s for s in row[1:] if s is not None]
+    if subjects:
+        print(f"{name} =>", ", ".join(subjects))
+
+# ✅ Calculate average mark per student
+print("\nAverage Marks per Student:")
+cursor.execute('''
+    SELECT name, (Mark1 + Mark2 + Mark3 + Mark4 + Mark5) / 5.0 AS average
+    FROM student_record
+''')
+averages = cursor.fetchall()
+for name, avg in averages:
+    print(f"{name}: {avg:.2f}")
+
+# ✅ Delete one student
+cursor.execute("DELETE FROM student_record WHERE name = 'DEVENDRASINH DOLATSINH JADEJA'")
+conn.commit()
+
+# ✅ Confirm deletion
+cursor.execute("SELECT * FROM student_record WHERE name = 'DEVENDRASINH DOLATSINH JADEJA'")
+if cursor.fetchone() is None:
+    print("\nDEVENDRASINH DOLATSINH JADEJA has been successfully deleted.")
+
+# ✅ Calculate total average of all students
+cursor.execute('''
+    SELECT AVG((Mark1 + Mark2 + Mark3 + Mark4 + Mark5)/5.0) FROM student_record
+''')
+total_avg = cursor.fetchone()[0]
+print(f"\nOverall average mark of all students: {total_avg:.2f}")
+
+# ✅ Close the connection
+conn.close()
